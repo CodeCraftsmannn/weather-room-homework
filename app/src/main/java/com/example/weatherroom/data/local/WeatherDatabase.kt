@@ -1,0 +1,17 @@
+package com.example.weatherroom.data.local
+
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+
+@Database(entities = [SavedWeather::class], version = 1, exportSchema = false)
+abstract class WeatherDatabase : RoomDatabase() {
+    abstract fun weatherDao(): WeatherDao
+    companion object {
+        @Volatile private var instance: WeatherDatabase? = null
+        fun getInstance(context: Context): WeatherDatabase = instance ?: synchronized(this) {
+            instance ?: Room.databaseBuilder(context.applicationContext, WeatherDatabase::class.java, "weather.db").build().also { instance = it }
+        }
+    }
+}
