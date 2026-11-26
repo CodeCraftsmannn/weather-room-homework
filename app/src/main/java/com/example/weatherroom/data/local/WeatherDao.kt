@@ -11,5 +11,6 @@ import kotlinx.coroutines.flow.Flow
 interface WeatherDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(weather: SavedWeather)
     @Update suspend fun update(weather: SavedWeather)
+    @Query("DELETE FROM saved_weather WHERE location = :location") suspend fun deleteByLocation(location: String)
     @Query("SELECT * FROM saved_weather ORDER BY updatedAt DESC") fun observeAll(): Flow<List<SavedWeather>>
 }
