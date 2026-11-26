@@ -14,11 +14,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -34,7 +38,7 @@ class MainActivity : ComponentActivity() {
     @Suppress("UNCHECKED_CAST")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val repo = WeatherRepository(WeatherDatabase.getInstance(this).weatherDao(), WeatherClient.api)
+        val repo = WeatherRepository(WeatherDatabase.getInstance(this).weatherDao(), WeatherClient.api, WeatherClient.geocodingApi)
         val factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T = WeatherViewModel(repo) as T
         }
@@ -42,11 +46,23 @@ class MainActivity : ComponentActivity() {
             val vm: WeatherViewModel = viewModel(factory = factory)
             val rows by vm.weather.collectAsState()
             val state by vm.uiState.collectAsState()
+            var cityName by remember { mutableStateOf("") }
             LaunchedEffect(Unit) { vm.onAction(WeatherViewModel.Action.Refresh) }
             MaterialTheme {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text("Ankara Weather", style = MaterialTheme.typography.headlineMedium)
+                        Text("Weather Room", style = MaterialTheme.typography.headlineMedium)
+                        OutlinedTextField(
+                            value = cityName,
+                            onValueChange = { cityName = it },
+                            label = { Text("Şehir adı") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Button(onClick = {
+                            vm.onAction(WeatherViewModel.Action.AddCity(cityName))
+                            cityName = ""
+                        }, enabled = cityName.isNotBlank()) { Text("Şehir ekle") }
                         Button(onClick = { vm.onAction(WeatherViewModel.Action.Refresh) }) { Text("Refresh") }
                         when (state) {
                             UiState.Loading -> CircularProgressIndicator()
@@ -59,8 +75,11 @@ class MainActivity : ComponentActivity() {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(rows, key = { it.location }) { row ->
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(row.location)
-                                    Text("${row.temperatureC}°C · wind ${row.windSpeedKmh} km/h")
+                                    Column {
+                                        Text(row.location, style = MaterialTheme.typography.titleMedium)
+                                        Text("${row.temperatureC}°C · wind ${row.windSpeedKmh} km/h")
+                                    }
+                                    Button(onClick = { vm.onAction(WeatherViewModel.Action.RemoveCity(row.location)) }) { Text("Sil") }
                                 }
                             }
                         }
