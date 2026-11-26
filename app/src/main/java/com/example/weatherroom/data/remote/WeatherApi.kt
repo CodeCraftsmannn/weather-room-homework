@@ -15,6 +15,14 @@ data class CurrentValues(
 )
 
 interface WeatherApi {
+    @GET("v1/search")
+    suspend fun searchCity(
+        @Query("name") name: String,
+        @Query("count") count: Int = 1,
+        @Query("language") language: String = "en",
+        @Query("format") format: String = "json"
+    ): GeocodingResponse
+
     @GET("v1/forecast")
     suspend fun currentWeather(
         @Query("latitude") latitude: Double,
@@ -23,3 +31,14 @@ interface WeatherApi {
         @Query("timezone") timezone: String = "auto"
     ): CurrentWeatherResponse
 }
+
+@Serializable
+data class GeocodingResponse(val results: List<GeocodingCity> = emptyList())
+
+@Serializable
+data class GeocodingCity(
+    val name: String,
+    val latitude: Double,
+    val longitude: Double,
+    val country: String? = null
+)
